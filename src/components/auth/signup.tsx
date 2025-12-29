@@ -9,10 +9,42 @@ const SignUp = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [acceptTerms, setAcceptTerms] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Handle form submission for registration
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(email, password, confirmPassword, acceptTerms);
+        
+        // Check if the passwords match
+        if (password !== confirmPassword) {
+            console.error('Passwords do not match');
+            return;
+        }
+        else{
+            setIsSubmitting(true);
+            // Log the form data before sending
+            console.log('Submitting signup form:', { email, username, password, acceptTerms });
+            
+            try {
+                // Make POST request to the signup API
+                const response = await fetch('/api/auth/signUp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, username, password, confirmPassword, acceptTerms }),
+                });
+                
+                // Parse the response
+                const data = await response.json();
+                console.log('Signup response:', data);
+            } catch (error) {
+                // Log any errors that occur during the signup request
+                console.error('Signup error:', error);
+            } finally {
+                setIsSubmitting(false);
+            }
+        }
     }
 
     return (
@@ -23,27 +55,35 @@ const SignUp = () => {
                     <p className="text-center text-3xl text-card-foreground mb-4">Register</p>
 
                     <input className={inputStyle}
+                    type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
+                    autoComplete="off"
                     required />
 
                     <input className={inputStyle} 
                     placeholder="Username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="off"
                     required />
 
-                    <input className={inputStyle} 
+                    <input className={inputStyle}
+                    type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
+                    autoComplete="off"
                     required />
 
                     <input className={inputStyle} 
+                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm password" />
+                    placeholder="Confirm password"
+                    autoComplete="off"
+                    required />
                     
                     <label className="flex cursor-pointer items-center justify-between p-1 text-muted-foreground">
                         Accept terms of use
@@ -58,8 +98,9 @@ const SignUp = () => {
                     
                     <button className={buttonStyle}
                     onClick={handleSubmit}
-                    type="submit">
-                        Register
+                    type="submit"
+                    disabled={isSubmitting}>
+                        {isSubmitting ? 'Submitting...' : 'Register'}
                     </button>
                 
             </div>

@@ -7,9 +7,24 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Handle form submission for login
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(email, password);
+        try {
+            // Make GET request to the login API with email and password as query parameters
+            const response = await fetch(`/api/auth/login?email=${email}&password=${password}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            // Parse the response JSON
+            const data = await response.json();
+            console.log('Login response:', data);
+        } catch (error) {
+            // Log any errors that occur during the login request
+            console.error('Login error:', error);
+        }
     }
 
     return (
@@ -21,15 +36,17 @@ const Login = () => {
             onChange={(e) => setEmail(e.target.value)}
             name="email"
             className={inputStyle}
-            placeholder="Email" 
+            placeholder="Email"
+            autoComplete="off"
             required />
 
             <input type="password"
             name="password"
-            className={buttonStyle} 
+            className={inputStyle} 
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="off"
             required />
 
             <button onClick={handleSubmit} 
