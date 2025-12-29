@@ -1,55 +1,80 @@
-import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Handle POST requests to the signup endpoint
+export async function POST(request: NextRequest) {
+    try {
+        const supabase = createAdminClient();
+        // Ensure the request is JSON
+        const contentType = request.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            return NextResponse.json({ success: false, message: 'Expected application/json' }, { status: 415 });
+        }
 
-export async function POST(req: Request) {
-    const { email, password, full_name, adminCode } = await req.json();
+        // Parse the JSON body from the request
+        const body = await request.json();
+        const email = body?.email?.toString().trim();
+        const password = body?.password?.toString();
+        const username = body?.username?.toString().trim();
+        const acceptTerms = body?.acceptTerms;
+        const code=body?.code;
 
-    const role = adminCode ? "admin" : "user";
 
-    // 🔐 Admin validation
-    if (role === "admin" && adminCode !== process.env.ADMIN_SIGNUP_SECRET) {
-        return NextResponse.json(
-        { error: "Invalid admin code" },
-        { status: 403 }
-        );
-    }
+        // Validate required fields
+        if (!email || !password || !username || !code) {
+            return NextResponse.json({ success: false, message: 'email, password,code and username are required' }, { status: 400 });
+        }
 
-    // 1️⃣ Create auth user
-    const { data: authData, error: authError } =
-        await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
+        if (acceptTerms !== true) {
+            return NextResponse.json({ success: false, message: 'accept terms and conditions' }, { status: 400 });
+        }
+        
+        if (password.length < 8) {
+            return NextResponse.json({ success: false, message: 'password must be at least 8 characters' }, { status: 400 });
+        }
+
+        if (code !== process.env.CODE){
+            return NextResponse.json({ success: false, message: 'invalid code' }, { status: 400 });
+        }
+
+
+        // Log the credentials (avoid logging passwords in production)
+        console.log('Signup attempt:', { email, username });
+        
+        // 1) Create auth user using admin API so we can rollback on failures
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: { username }
         });
 
-    if (authError) {
-        return NextResponse.json({ error: authError.message }, { status: 400 });
+        if (authError || !authData?.user?.id) {
+            console.error('Supabase admin.createUser error:', authError);
+            return NextResponse.json({ success: false, message: authError?.message || 'failed to create user' }, { status: 400 });
+        }
+
+        const userId = authData.user.id;
+
+        // 2) Insert into `user` table (application profile)
+        const { error: insertError } = await supabase.from('user').insert({
+            id: userId,
+            email,
+            name: username,
+            role: 'staff'
+        });
+
+        if (insertError) {
+            // Rollback: delete the auth user
+            console.error('Failed to insert profile, rolling back user creation:', insertError);
+            await supabase.auth.admin.deleteUser(userId);
+            return NextResponse.json({ success: false, message: insertError.message }, { status: 400 });
+        }
+
+        // Success
+        return NextResponse.json({ success: true, userId });
+    } catch (err) {
+        console.error('Signup error:', err);
+        return NextResponse.json({ success: false, message: 'invalid request' }, { status: 400 });
     }
-
-    const userId = authData.user.id;
-
-    // 2️⃣ Insert profile
-    const { error: profileError } = await supabase.from("profiles").insert({
-        id: userId,
-        email,
-        full_name,
-        role,
-    });
-
-    if (profileError) {
-        // 🔥 rollback auth user
-        await supabase.auth.admin.deleteUser(userId);
-
-        return NextResponse.json(
-        { error: profileError.message },
-        { status: 400 }
-        );
-    }
-
-    return NextResponse.json({ success: true });
 }
