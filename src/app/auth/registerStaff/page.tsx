@@ -6,7 +6,7 @@ const SignUpStaff = () => {
     return (
         <>
             <div className=" flex items-center justify-center h-screen">
-                <div className="flex flex-col gap-2 p-8">
+                <div className="flex flex-col gap-2 p-8 w-[60%] bg-amber-600 dark:bg-amber-800 rounded">
                     <p className="text-center text-3xl text-card-foreground mb-4">Register Staff</p>
                     <input className={inputStyle} 
                         type="text"
