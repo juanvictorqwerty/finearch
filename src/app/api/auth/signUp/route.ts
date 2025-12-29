@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // Handle POST requests to the signup endpoint
 export async function POST(request: NextRequest) {
     try {
+        //define the admin client
         const supabase = createAdminClient();
         // Ensure the request is JSON
         const contentType = request.headers.get('content-type') || '';
