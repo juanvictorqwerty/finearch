@@ -2,9 +2,12 @@
 
 import { buttonStyle, inputStyle } from '@/lib/styles';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 
 
 const SignUpStaff = () => {
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -20,9 +23,10 @@ const SignUpStaff = () => {
             console.error('Passwords do not match');
             return;
         }
-        else{
-            console.log('Submitting signup form:', { email, username, password, acceptTerms });
-            setIsSubmitting(true);
+        setIsSubmitting(true);
+
+        try{
+            console.log('Submitting signup admin form:', { email, username, password, acceptTerms });
             // Make POST request to the signup API
             const response=await fetch('/api/auth/signUpStaff', {
                 method: 'POST',
@@ -34,6 +38,17 @@ const SignUpStaff = () => {
             // Parse the response
             const data = await response.json();
             console.log('Signup response:', data);
+            setIsSubmitting(false);
+
+            if (response.ok){
+                router.push('/auth/login');
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Signup failed');
+            }
+        }catch(error){
+            console.error('Signup error:', error);
+        } finally {
             setIsSubmitting(false);
         }
 

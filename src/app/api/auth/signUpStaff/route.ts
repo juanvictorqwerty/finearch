@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // Handle POST requests to the signup endpoint
 export async function POST(request: NextRequest) {
     try {
+        //define the admin client
         const supabase = createAdminClient();
         // Ensure the request is JSON
         const contentType = request.headers.get('content-type') || '';
@@ -15,14 +16,11 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const email = body?.email?.toString().trim();
         const password = body?.password?.toString();
-        const username = body?.username?.toString().trim();
         const acceptTerms = body?.acceptTerms;
-        const code=body?.code;
-
 
         // Validate required fields
-        if (!email || !password || !username || !code) {
-            return NextResponse.json({ success: false, message: 'email, password,code and username are required' }, { status: 400 });
+        if (!email || !password ) {
+            return NextResponse.json({ success: false, message: 'email, and password are required' }, { status: 400 });
         }
 
         if (acceptTerms !== true) {
@@ -33,20 +31,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: 'password must be at least 8 characters' }, { status: 400 });
         }
 
-        if (code !== process.env.CODE){
-            return NextResponse.json({ success: false, message: 'invalid code' }, { status: 400 });
-        }
-
 
         // Log the credentials (avoid logging passwords in production)
-        console.log('Signup attempt:', { email, username });
+        console.log('Signup attempt:', { email });
         
         // 1) Create auth user using admin API so we can rollback on failures
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
             password,
             email_confirm: true,
-            user_metadata: { username }
         });
 
         if (authError || !authData?.user?.id) {
@@ -60,8 +53,7 @@ export async function POST(request: NextRequest) {
         const { error: insertError } = await supabase.from('user').insert({
             id: userId,
             email,
-            name: username,
-            role: 'staff'
+            role: "staff"
         });
 
         if (insertError) {
