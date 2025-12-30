@@ -8,9 +8,9 @@ export default function Navbar() {
 
     // Helper function to apply styles if the link is active
     const getLinkStyle = (path: string) => {
-        const baseStyle = "h-full px-4 flex items-center transition-colors font-medium";
-        const activeStyle = "bg-orange-600 text-white"; // Style when selected
-        const inactiveStyle = "hover:bg-orange-500 text-zinc-900 dark:text-zinc-100";
+        const baseStyle = "h-full px-4 flex items-center transition-colors font-medium rounded";
+        const activeStyle = "bg-orange-600 text-white rounded-lg"; // Style when selected
+        const inactiveStyle = "hover:bg-orange-500 text-zinc-900 dark:text-zinc-100 rounded";
 
         return `${baseStyle} ${pathname === path ? activeStyle : inactiveStyle}`;
     };
@@ -21,6 +21,11 @@ export default function Navbar() {
         
         {/* Ensure the container for links is also h-full */}
         <div className="flex h-full">
+            <Link href="/financeClearance" 
+                className={getLinkStyle("/financeClearance")}>
+                Finance Clearance
+            </Link>
+
             <Link href="/" className={getLinkStyle("/")}>
             Home
             </Link>
