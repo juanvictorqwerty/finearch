@@ -1,9 +1,10 @@
 'use client'
 import { buttonStyle, inputStyle } from "@/lib/styles";
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // 1. Import useRouter
 
 const SignUp = () => {
-
+    const router = useRouter(); // 2. Initialize router
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -11,39 +12,36 @@ const SignUp = () => {
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Handle form submission for registration
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Check if the passwords match
         if (password !== confirmPassword) {
-            console.error('Passwords do not match');
+            alert('Passwords do not match');
             return;
         }
-        else{
-            setIsSubmitting(true);
-            // Log the form data before sending
-            console.log('Submitting signup form:', { email, username, password, acceptTerms });
+
+        setIsSubmitting(true);
+        
+        try {
+            const response = await fetch('/api/auth/signUp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, username, password, acceptTerms }),
+            });
             
-            try {
-                // Make POST request to the signup API
-                const response = await fetch('/api/auth/signUp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, username, password, confirmPassword, acceptTerms }),
-                });
-                
-                // Parse the response
-                const data = await response.json();
-                console.log('Signup response:', data);
-            } catch (error) {
-                // Log any errors that occur during the signup request
-                console.error('Signup error:', error);
-            } finally {
-                setIsSubmitting(false);
+            // 3. Handle the transition
+            if (response.ok) {
+                // If your API returns JSON, you can check data.success
+                // If it returns a redirect, response.ok will still be true
+                router.push('/auth/login'); 
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Signup failed');
             }
+        } catch (error) {
+            console.error('Signup error:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
